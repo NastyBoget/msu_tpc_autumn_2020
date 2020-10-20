@@ -1,3 +1,5 @@
 train
 *.DS_Store
 *pycache*
+*.ipynb_checkpoints*
+*.idea*
