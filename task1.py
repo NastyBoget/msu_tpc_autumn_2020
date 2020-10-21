@@ -1,4 +1,4 @@
-from xgboost import XGBClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 import re
 import numpy as np
 
@@ -18,8 +18,6 @@ reg_exprs = [
     re.compile(r'[У|у]каз'),
     re.compile(r'УКАЗ')
 ]
-
-TRAIN_DIR = 'train/txts/'
 
 classes2num = {
     'федеральный закон': 0,
@@ -55,7 +53,7 @@ def make_features(X: List[str]):
 class Solution:
 
     def __init__(self):
-        self.clf = XGBClassifier()
+        self.clf = GradientBoostingClassifier()
 
     def train(self, train: List[Tuple[str, dict]]) -> None:
         docs = []
