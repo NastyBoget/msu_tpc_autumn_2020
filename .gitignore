@@ -3,3 +3,5 @@ train
 *pycache*
 *.ipynb_checkpoints*
 *.idea*
+solution
+solution.zip
