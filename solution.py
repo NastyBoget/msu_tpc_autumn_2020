@@ -17,8 +17,8 @@ class Solution:
         results = []
         pred_types = self.type_extractor.predict(test)
         for i, doc in enumerate(test):
-            pred_number = extract_number(doc, pred_types[i])
             pred_date = extract_date(doc, pred_types[i])
+            pred_number = extract_number(doc, pred_types[i], pred_date)
             prediction = {"type": pred_types[i],
                           "date": pred_date,
                           "number": pred_number,
