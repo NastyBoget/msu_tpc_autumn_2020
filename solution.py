@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from type_extractor import TypeExtractor
+from type_extractor import extract_type
 from number_extractor import extract_number
 from date_extractor import extract_date
 from authority_name_extractor import extract_name, extract_authority
@@ -9,20 +9,20 @@ from authority_name_extractor import extract_name, extract_authority
 class Solution:
 
     def __init__(self):
-        self.type_extractor = TypeExtractor()
+        pass
 
     def train(self, train: List[Tuple[str, dict]]) -> None:
-        self.type_extractor.train(train)
+        pass
 
     def predict(self, test: List[str]) -> List[dict]:
         results = []
-        pred_types = self.type_extractor.predict(test)
-        for i, doc in enumerate(test):
-            pred_date = extract_date(doc, pred_types[i])
-            pred_number = extract_number(doc, pred_types[i], pred_date)
-            pred_name = extract_name(doc)
-            pred_authority = extract_authority(doc)
-            prediction = {"type": pred_types[i],
+        for doc in test:
+            pred_type = extract_type(doc)
+            pred_date = extract_date(doc, pred_type)
+            pred_number = extract_number(doc, pred_type, pred_date)
+            pred_name = extract_name(doc, pred_type)
+            pred_authority = extract_authority(doc, pred_type)
+            prediction = {"type": pred_type,
                           "date": pred_date,
                           "number": pred_number,
                           "authority": pred_authority,
