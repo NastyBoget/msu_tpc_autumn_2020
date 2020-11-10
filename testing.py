@@ -1,5 +1,4 @@
 from solution import Solution
-from sklearn.model_selection import train_test_split
 from eval_module import quality
 import json
 
@@ -14,10 +13,8 @@ if __name__ == "__main__":
             docname = TRAIN_DIR + doc_dict['id'] + '.txt'
             with open(docname, 'r') as f:
                 train.append((f.read(), doc_dict['label']))
-    train_data, test = train_test_split(train)
     solution = Solution()
-    solution.train(train_data)
-    test_data = [x[0] for x in test]
-    test_labels = [x[1] for x in test]
+    test_data = [x[0] for x in train]
+    test_labels = [x[1] for x in train]
     result = solution.predict(test_data)
     print(quality(result, test_labels))

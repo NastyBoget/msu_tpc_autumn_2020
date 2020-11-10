@@ -5,6 +5,8 @@ PREPR_EXPR = re.compile(r'[^\wа-яА-Я\"\s\.,;:№\-\)\(]')
 
 def preprocess_doc(doc):
     doc = '\n' + doc.lower()
+    doc = re.sub('_', ' ', doc)
+    doc = re.sub(r'кои ', 'кой ', doc)
     return PREPR_EXPR.sub('', doc)
 
 
@@ -183,42 +185,21 @@ def extract_authority(doc, doc_type):
     return authority
 
 
-NAME_EXPR_1 = re.compile(r'\n((о|об) ([^\n]+\n)+)\n')
-NAME_EXPR_2 = re.compile(r'(\"(о|об) [^\"\']+\")')
-NAME_EXPR_3 = re.compile(r'(о внесении ([^\n]+\n)+)\n')
-LAW_NAME = re.compile(r'о законе [^\"]+(\"([^\n]+\n)+)\n')
-NAME_EXPR_4 = re.compile(r'((о|об) ([^\n]+\n)+)\n')
+NAME_EXPR = re.compile(r'(\nоб?\s[а-я]([^\n]+\n)+\n)')
+UKAZ_EXPR = re.compile(r'(\nвопросы\s([^\n]+\n)+\n)')
+POST_EXPR = re.compile(r'"о\s[^"]+"')
 
 
 def extract_name(doc, doc_type):
     doc = preprocess_doc(doc)
-    names, positions = [], []
-    if doc_type == 'закон':
-        name = LAW_NAME.search(doc)
-        if name:
-            names.append(name.group(1))
-            positions.append(name.span()[0])
-    name = NAME_EXPR_3.search(doc)
-    if name:
-        names.append(name.group(1))
-        positions.append(name.span()[0])
-    name = NAME_EXPR_1.search(doc)
-    if name:
-        names.append(name.group(1))
-        positions.append(name.span()[0])
-    name = NAME_EXPR_2.search(doc)
-    if name:
-        names.append(name.group(1))
-        positions.append(name.span()[0])
-    if not names:
-        name = NAME_EXPR_4.search(doc)
-        if not name:
-            return ""
-        return name.group(1)
-    name, pos = names[0], positions[0]
-    for n, p in zip(names, positions):
-        if p < pos:
-            pos = p
-            name = n
-
-    return name
+    matches = NAME_EXPR.findall(doc)
+    if matches:
+        return matches[0][0].strip()
+    if doc_type == 'указ':
+        matches = UKAZ_EXPR.findall(doc)
+        if matches:
+            return matches[0][0].strip()
+    matches = POST_EXPR.findall(doc)
+    if matches:
+        return matches[0].strip()
+    return ""
