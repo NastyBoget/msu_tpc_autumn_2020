@@ -17,85 +17,93 @@ month2number = {
 
 date_reg_exprs = [
     re.compile(r'от (\d?\d) ([а-я]+) (\d\d\d\d)'),
-    re.compile(r'(\d\d)\.(\d\d)\.(\d\d\d\d)'),
-    re.compile(r'\n(\d?\d) ([а-я]+) (\d\d\d\d)')
+    re.compile(r'\n(\d?\d) ([а-я]+) (\d\d\d\d)'),
+    re.compile(r'(\d\d)\.(\d\d)\.(\d\d\d\d)')
 ]
+
+
+F_Z = re.compile(r'\n(\d?\d) ([а-я]+) (\d\d\d\d) года\n')
+Z = re.compile(r'\n(от )?(\d?\d)[ \.]([а-я]+|\d\d)[ \.](\d\d\d\d)')
+R = re.compile(r'\n(\d\d\.\d\d\.\d\d\d\d)[^\n]*\n№ [\w\-/а-я]+\n')
+P = re.compile(r'постановление\n([^\n\d]*\n)?([^\n\d]*\n)?([^\n\d]*\n)?(от[_\- ]+?)?(\d?\d)[ \.]([а-я]+|\d\d)[ \.](\d\d\d\d)')
+PRIKAZ = re.compile(r'приказ\n([^\n]*\n)?([^\n]*\n)?(от )?(\d?\d)[ \.]([а-я]+|\d\d)[ \.](\d\d\d\d)')
+U = re.compile(r'указ\n([^\n]*\n)?([^\n]*\n)?([^\n]*\n)?(от )?(\d?\d)[ \.]([а-я]+|\d\d)[ \.](\d\d\d\d)')
+
+
+def doc_preprocess(doc):
+    doc = '\n' + doc.lower() + '\n'
+    doc = re.sub(r"[_о](\d?\d [а-я]+ \d\d\d\d)", r"\1", doc)
+    doc = re.sub(r"_(\d?\d\.\d\d\.\d\d\d\d)", r"\1", doc)
+    doc = re.sub(r"\n+", "\n", doc)
+    return doc
 
 
 def process_match(match):
     day = match[0] if len(match[0]) == 2 else '0' + match[0]
     month = month2number[match[1]] if match[1] in month2number else match[1]
     year = match[2]
-    return day, month, year
+    return f"{day}.{month}.{year}"
+
+
+def reverse_date(date):
+    if len(date) == 10:
+        return f"{date[6:]}.{date[3:5]}.{date[:2]}"
+    return date
+
+
+def find_max_date(variants, start=0):
+    date = process_match(variants[0][start:]) if variants else ''
+    for variant in variants:
+        processed_variant = process_match(variant[start:])
+        if reverse_date(processed_variant) > reverse_date(date):
+            date = processed_variant
+    return date
 
 
 def extract_date(doc, doc_type):
-    matches = []
-    variants = []
-    doc = '\n' + doc.lower() + '\n'
-    doc = re.sub(r'\n+', r'\n', doc)
-
-    if doc_type == 'федеральный закон':
-        match = re.search(r'\n(\d?\d) ([а-я]+) (\d\d\d\d) года\n', doc)
+    doc = doc_preprocess(doc)
+    if doc_type == "федеральный закон":
+        match = F_Z.search(doc)
         if match:
-            date = process_match((match.group(1), match.group(2), match.group(3)))
-            return f'{date[0]}.{date[1]}.{date[2]}'
-
-    if doc_type == 'приказ':
-        match = re.search(r'приказ\n([^\n]*\n)?([^\n]*\n)?(от )?(\d?\d) ([а-я]+) (\d\d\d\d)', doc)
-        if match:
-            date = process_match((match.group(4), match.group(5), match.group(6)))
-            return f'{date[0]}.{date[1]}.{date[2]}'
-        match = re.search(r'приказ\n([^\n]*\n)?([^\n]*\n)?(от )?(\d\d\.\d\d\.\d\d\d\d)', doc)
-        if match:
-            return match.group(4)
-
-    if doc_type == 'указ':
-        match = re.search(r'указ\n([^\n]*\n)?([^\n]*\n)?([^\n]*\n)?(от )?(\d?\d) ([а-я]+) (\d\d\d\d)', doc)
-        if match:
-            date = process_match((match.group(5), match.group(6), match.group(7)))
-            return f'{date[0]}.{date[1]}.{date[2]}'
-        match = re.search(r'указ\n([^\n]*\n)?([^\n]*\n)?([^\n]*\n)?(от )?(\d\d\.\d\d\.\d\d\d\d)', doc)
-        if match:
-            return match.group(5)
+            return process_match((match.group(1), match.group(2), match.group(3)))
 
     if doc_type == 'распоряжение':
-        match = re.search(r'\n(\d\d\.\d\d\.\d\d\d\d)[^\n]*\n№ [\w\-/а-я]+\n', doc)
+        match = R.search(doc)
         if match:
             return match.group(1)
-
-    if doc_type == 'постановление':
-        match = re.search(
-            r'постановление\n([^\n\d]*\n)?([^\n\d]*\n)?([^\n\d]*\n)?(от[_\- ]+?)?(\d?\d) ([а-я]+) (\d\d\d\d)', doc)
-        if match:
-            date = process_match((match.group(5), match.group(6), match.group(7)))
-            return f'{date[0]}.{date[1]}.{date[2]}'
-        match = re.search(r'постановление\n([^\n\d]*\n)?([^\n\d]*\n)?([^\n\d]*\n)?[а-я_\- ]*(\d\d\.\d\d\.\d\d\d\d)',
-                          doc)
-        if match:
-            return match.group(4)
 
     if doc_type == 'закон':
-        match = re.search(r'\n(\d\d\.\d\d\.\d\d\d\d)[^\n]*\n№ [\w\-/а-я]+\n', doc)
-        if match:
-            return match.group(1)
-        match = re.search(r'\n(от )?(\d?\d) ([а-я]+) (\d\d\d\d)[^\n]*\n№ [\w\-/а-я]+\n', doc)
-        if match:
-            date = process_match((match.group(2), match.group(3), match.group(4)))
-            return f'{date[0]}.{date[1]}.{date[2]}'
+        matches = Z.findall(doc)
+        if matches:
+            date = find_max_date(matches, start=1)
+            return date
 
-    for expr in date_reg_exprs:
-        matches += expr.findall(doc)
+    if doc_type == 'постановление':
+        doc = re.sub(r"[пнл]оста[нв]ов[пнл]е[нпл]и[ек]", r"постановление", doc)
+        match = P.search(doc)
+        if match:
+            return process_match((match.group(5), match.group(6), match.group(7)))
+
+    if doc_type == 'приказ':
+        match = PRIKAZ.search(doc)
+        if match:
+            return process_match((match.group(4), match.group(5), match.group(6)))
+
+    if doc_type == 'указ' and not doc.find('о внесении изменений') != -1:
+        match = U.search(doc)
+        if match:
+            return process_match((match.group(5), match.group(6), match.group(7)))
+
+    matches = []
+    for reg_expr in date_reg_exprs:
+        matches += reg_expr.findall(doc)
     if matches:
-        for match in matches:
-            variants.append(process_match(match))
-    else:
-        matches = re.findall(r'(\d?\d) ([а-я]+) (\d\d\d\d)', doc)
-        for match in matches:
-            variants.append(process_match(match))
-
-    date = variants[0] if variants else ''
-    for variant in variants:
-        if f'{variant[2]}.{variant[1]}.{variant[0]}' > f'{date[2]}.{date[1]}.{date[0]}':
-            date = variant
-    return f'{date[0]}.{date[1]}.{date[2]}' if date else date
+        if doc_type == 'постановление' and re.search(r"\\сессии\\", doc):
+            matches = matches[:-1]
+        date = find_max_date(matches)
+        return date
+    matches = re.findall(r'(\d?\d) ([а-я]+) (\d\d\d\d)', doc)
+    if matches:
+        date = find_max_date(matches)
+        return date
+    return ""
