@@ -104,6 +104,5 @@ def extract_date(doc, doc_type):
         return date
     matches = re.findall(r'(\d?\d) ([а-я]+) (\d\d\d\d)', doc)
     if matches:
-        date = find_max_date(matches)
-        return date
+        return find_max_date(matches)
     return ""
