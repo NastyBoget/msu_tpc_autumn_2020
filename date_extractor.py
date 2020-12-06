@@ -21,19 +21,21 @@ date_reg_exprs = [
     re.compile(r'(\d\d)\.(\d\d)\.(\d\d\d\d)')
 ]
 
-
 F_Z = re.compile(r'\n(\d?\d) ([а-я]+) (\d\d\d\d) года\n')
-Z = re.compile(r'\n(от )?(\d?\d)[ \.]([а-я]+|\d\d)[ \.](\d\d\d\d)')
+Z = re.compile(r'\n(от )?(\d?\d)[ .]([а-я]+|\d\d)[ .](\d\d\d\d)')
 R = re.compile(r'\n(\d\d\.\d\d\.\d\d\d\d)[^\n]*\n№ [\w\-/а-я]+\n')
-P = re.compile(r'постановление\n([^\n\d]*\n)?([^\n\d]*\n)?([^\n\d]*\n)?(от[_\- ]+?)?(\d?\d)[ \.]([а-я]+|\d\d)[ \.](\d\d\d\d)')
-PRIKAZ = re.compile(r'приказ\n([^\n]*\n)?([^\n]*\n)?(от )?(\d?\d)[ \.]([а-я]+|\d\d)[ \.](\d\d\d\d)')
-U = re.compile(r'указ\n([^\n]*\n)?([^\n]*\n)?([^\n]*\n)?(от )?(\d?\d)[ \.]([а-я]+|\d\d)[ \.](\d\d\d\d)')
+P = re.compile(r'постановление\n([^\n\d]*\n)?([^\n\d]*\n)?([^\n\d]*\n)?'
+               r'(от[_\- ]+?)?(\d?\d)[ .]([а-я]+|\d\d)[ .](\d\d\d\d)')
+PRIKAZ = re.compile(r'приказ\n([^\n]*\n)?([^\n]*\n)?(от )?(\d?\d)[ .]([а-я]+|\d\d)[ .](\d\d\d\d)')
+U = re.compile(r'указ\n([^\n]*\n)?([^\n]*\n)?([^\n]*\n)?(от )?(\d?\d)[ .]([а-я]+|\d\d)[ .](\d\d\d\d)')
 
 
 def doc_preprocess(doc):
     doc = '\n' + doc.lower() + '\n'
     doc = re.sub(r"[_о](\d?\d [а-я]+ \d\d\d\d)", r"\1", doc)
-    doc = re.sub(r"_(\d?\d\.\d\d\.\d\d\d\d)", r"\1", doc)
+    doc = re.sub("- ", "", doc)
+    doc = re.sub(" -", "", doc)
+    doc = re.sub(r"_+", "", doc)
     doc = re.sub(r"\n+", "\n", doc)
     return doc
 

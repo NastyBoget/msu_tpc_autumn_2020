@@ -1,13 +1,13 @@
 import re
 from date_extractor import process_match
 
-PREPR_EXPR = re.compile(r'[^\wа-яА-Я\s\.,;:№\-/]')
+PREPR_EXPR = re.compile(r'[^\wа-яА-Я\s.,;:№\-/]')
 
 
 def doc_preprocess(doc):
     doc = '\n' + doc.lower() + '\n'
-    doc = re.sub(r"(\d)\$(\d*\-)", r"\g<1>8\g<2>", doc)
-    doc = re.sub(r"(\-[\wа-я]*)\$", r"\g<1>8", doc)
+    doc = re.sub(r"(\d)\$(\d*-)", r"\g<1>8\g<2>", doc)
+    doc = re.sub(r"(-[\wа-я]*)\$", r"\g<1>8", doc)
     doc = re.sub("ппп", "пп", doc)
     doc = re.sub(r"0?п0", "пп", doc)
     doc = re.sub("- ", "", doc)
@@ -19,10 +19,10 @@ def doc_preprocess(doc):
 
 F_Z = re.compile(r"\n№ ?([\wа-я\-/]+)\s")
 Z = re.compile(r"\s№\s?([\wа-я\-/]+)\s")
-R = re.compile(r"распоряжение\n([^\n\d]*\n){0,3}[^\n\d]*\d?\d[ \.]([а-я]+|\d\d)"
-               r"[ \.]\d\d\d\d[^\n]*[\s№]([\wа-я\-/]+):?\n")
-P = re.compile(r"постановление\s*\n([^\n\d]*\n){0,3}[^\n\d]*\d?\d[ \.]"
-               r"([а-я]+|\d\d)[ \.]\d\d\d\d[^\n]*([\s№]|№ .?)([\wа-я\-/]+).?\n")
+R = re.compile(r"распоряжение\n([^\n\d]*\n){0,3}[^\n\d]*\d?\d[ .]([а-я]+|\d\d)"
+               r"[ .]\d\d\d\d[^\n]*[\s№]([\wа-я\-/]+):?\n")
+P = re.compile(r"постановление\s*\n([^\n\d]*\n){0,3}[^\n\d]*\d?\d[ .]"
+               r"([а-я]+|\d\d)[ .]\d\d\d\d[^\n]*([\s№]|№ .?)([\wа-я\-/]+).?\n")
 PRIKAZ = re.compile(r'приказ\n[^\n№]*\n*[^\n№]*№ ([\w\-/а-я ]+)')
 
 
@@ -47,7 +47,7 @@ def extract_number(doc, doc_type, doc_date):
 
     if doc_type == "закон":
         if doc.find('-кз') != -1 or doc.find('-оз') != -1 or doc.find('-рз') != -1:
-            matches = re.findall("(\d+\-[кор]з)", doc)
+            matches = re.findall(r"(\d+-[кор]з)", doc)
             if matches:
                 return matches[-1]
         doc1 = '\n'.join(doc.split('\n')[-10:])

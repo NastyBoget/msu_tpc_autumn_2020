@@ -1,11 +1,12 @@
 import re
 
-PREPR_EXPR = re.compile(r'[^\wа-яА-Я\"\s\.,;:№\-\)\(]')
+PREPR_EXPR = re.compile(r'[^\wа-яА-Я\"\s.,;:№\-)(]')
 
 
 def preprocess_doc(doc):
     doc = '\n' + doc.lower()
     doc = re.sub('_', ' ', doc)
+    doc = re.sub(' +', ' ', doc)
     doc = re.sub(r'кои ', 'кой ', doc)
     return PREPR_EXPR.sub('', doc)
 
@@ -188,18 +189,28 @@ def extract_authority(doc, doc_type):
 NAME_EXPR = re.compile(r'(\nоб?\s[а-я]([^\n]+\n)+\n)')
 UKAZ_EXPR = re.compile(r'(\nвопросы\s([^\n]+\n)+\n)')
 POST_EXPR = re.compile(r'"о\s[^"]+"')
+LAST_EXPR = re.compile(r'(об? ([^\n]+\n)+)\n')
+POST2_EXPR = re.compile(r'(о внесении изменени[яй] [^\"]+)\"')
 
 
 def extract_name(doc, doc_type):
     doc = preprocess_doc(doc)
-    matches = NAME_EXPR.findall(doc)
-    if matches:
-        return matches[0][0].strip()
+    match = NAME_EXPR.search(doc)
+    if match:
+        name = match.group(0).strip()
+        if doc.find('правительство пензенской области') != -1:
+            match = POST2_EXPR.search(name)
+            if match:
+                return match.group(0).strip()
+        return name
     if doc_type == 'указ':
-        matches = UKAZ_EXPR.findall(doc)
-        if matches:
-            return matches[0][0].strip()
-    matches = POST_EXPR.findall(doc)
-    if matches:
-        return matches[0].strip()
+        match = UKAZ_EXPR.search(doc)
+        if match:
+            return match.group(0).strip()
+    match = POST_EXPR.search(doc)
+    if match:
+        return match.group()
+    match = LAST_EXPR.search(doc)
+    if match:
+        return match.group(0).strip()
     return ""

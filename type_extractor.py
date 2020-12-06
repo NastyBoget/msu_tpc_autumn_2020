@@ -11,15 +11,14 @@ subs = [
     (re.compile(r"о? ?Р?АС[ПН]ОРЯЖЕНИЕ\b"), "РАСПОРЯЖЕНИЕ"),
 ]
 
+exprs = ['закон\s|федеральный закон', 'приказ|истрировано', 'указ', 'распоряжение', 'постановление']
+
 
 def preprocess(doc):
     doc = '\n' + doc.lower()
     for temptate, substitute in subs:
         doc = re.sub(temptate, substitute, doc)
     return doc
-
-
-exprs = ['закон\s|федеральный закон', 'приказ|истрировано', 'указ', 'распоряжение', 'постановление']
 
 
 def find_best_match(types, doc):
