@@ -1,23 +1,14 @@
 import re
 import numpy as np
 
-subs = [
-    (re.compile(r"[. ]*\b[пПНИ]?[Оо]?[СЗз][Г]?[Тт][АВ]Ц?[НВ]?[О.Я]?[БВ][АЛП]"
-                r"[ЕР][НЦИ]И[ЕКВ]{0,3}\b|^А?Н?О?В?ЛЕНИЕ\b|ПОСТАНОВ(?:Л\b|:)"), "ПОСТАНОВЛЕНИЕ"),
-    (re.compile(r"\b[ПНИ]{1,2} ?Р ?[И&] ?К ?А ?З?|\bПР и ?[зЗ3]"), "ПРИКАЗ"),
-    (re.compile(r"[У'`] ?К ?А ?[З:]"), "УКАЗ"),
-    (re.compile(r"^У\nГУБЕРНАТОРА", re.M), "УКАЗ\nГУБЕРНАТОРА"),
-    (re.compile(r"З?АКОН?\b"), "ЗАКОН"),
-    (re.compile(r"о? ?Р?АС[ПН]ОРЯЖЕНИЕ\b"), "РАСПОРЯЖЕНИЕ"),
-]
 
 exprs = ['закон\s|федеральный закон', 'приказ|истрировано', 'указ', 'распоряжение', 'постановление']
 
 
 def preprocess(doc):
     doc = '\n' + doc.lower()
-    for temptate, substitute in subs:
-        doc = re.sub(temptate, substitute, doc)
+    doc = re.sub(r'[нп]рика[з3]', 'приказ', doc)
+    doc = re.sub('ука3', 'указ', doc)
     return doc
 
 
