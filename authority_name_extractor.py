@@ -10,6 +10,7 @@ def preprocess_doc_name(doc):
     doc = re.sub(r'кои ', 'кой ', doc)
     return PREPR_EXPR.sub('', doc)
 
+
 def preprocess_doc(doc):
     doc = '\n' + doc.lower()
     doc = re.sub(r"[пнл]оста[нв]ов[пнл]е[нпл]и[ек]", r"постановление", doc)
@@ -22,11 +23,12 @@ def preprocess_doc(doc):
 
 
 subs = {
-    "губернатора": "губернатор ",
-    "конституционного суда": "конституционный суд ",
-    "правительства": "правительство ",
-    "главы": "глава ",
-    "администрации": "администрация ",
+    "губернатора": "губернатор",
+    "конституционного суда": "конституционный суд",
+    "правительства": "правительство",
+    "главы": "глава",
+    "администрации": "администрация",
+    "президента": "президент",
 }
 POST_EXPR_1 = re.compile(r'(([а-я\s?]+\n)?[^\n]+(области|края|российской федерации|совет депутатов|'
                          r'округа))\s+([^\n]+созыва\s+)?постановление\s*\n')
@@ -67,7 +69,7 @@ def post_authority(doc):
         return match.group(1).strip()
     match = POST_EXPR_3.search(doc)
     if match:
-        return subs[match.group(1)] + match.group(2).strip()
+        return subs[match.group(1)] + " " + match.group(2).strip()
     match = POST_EXPR_4.search(doc)
     if match and len(match.group(1).split(' ')) > 2:
         authority = match.group(1).strip()
@@ -79,10 +81,11 @@ def post_authority(doc):
 
 
 ZAKON_EXPR = re.compile(
-    r'принят[ \n]([^\n]*(государственн|совет|законодательн|собрание|'
-    r'областн|дум|народн|курултай|президент)[^\n\d]*(\n[а-я\-\s]+\d\d)?)')
+    r'принят\s([^\n]*(государственн|совет|законодательн|собрание|'
+    r'областн|дум|народн|курултай|президент)[^\n\d]*(\n[а-я\-]+ \d\d)?)')
 ZAKON_EXPR_2 = re.compile(r'\n([а-я\s]+)\s[^\s]*постановляет')
 ZAKON_EXPR_3 = re.compile(r'\nзакон\n\n([а-я ]+)\n\n')
+ZAKON_EXPR_4 = re.compile(r'принят\s([а-я\- ]+\s([а-я\- ]+\s)?)\d\d')
 
 lemmatizer = {
     'законодательным': 'законодательное', 'областной': 'областная', 'думой': 'дума',
@@ -92,21 +95,8 @@ lemmatizer = {
 }
 
 
-def zakon_authority(doc):
-    if doc.startswith('\nкостромская областная дума'):
-        return 'костромская областная дума'
-    match = ZAKON_EXPR_2.search(doc)
-    if match:
-        return match.group().strip()
-    match = ZAKON_EXPR_3.search(doc)
-    if match:
-        return 'законодательная дума ' + match.group(1).strip()
-
-    match = ZAKON_EXPR.search(doc)
-    if not match:
-        if not match:
-            return ""
-    tokens = re.sub(r'[^а-я \-]', ' ', match.group(1)).split(' ')
+def normalize(authority):
+    tokens = re.sub(r'[^а-я \-]', ' ', authority).split(' ')
     authority = ""
     for token in tokens:
         if token in lemmatizer:
@@ -114,7 +104,33 @@ def zakon_authority(doc):
         else:
             authority += token + ' '
     authority = re.sub(r'ой( [а-я\-]* ?дума)', r'ая\1', authority)
-    return authority
+    return authority.strip()
+
+
+def zakon_authority(doc):
+    if doc.startswith('\nкостромская областная дума'):
+        return 'костромская областная дума'
+
+    match = ZAKON_EXPR_3.search(doc)
+    if match and doc.find('принят законодательным собранием') != -1:
+        return 'законодательное собрание ' + match.group(1).strip()
+
+    match = ZAKON_EXPR_2.search(doc)
+    if match:
+        return match.group().strip()
+    match = ZAKON_EXPR_3.search(doc)
+    if match:
+        return 'законодательная дума ' + match.group(1).strip()
+    match = ZAKON_EXPR_4.search(doc)
+    if match:
+        return normalize(match.group(1))
+
+    match = ZAKON_EXPR.search(doc)
+    if not match:
+        if not match:
+            return ""
+
+    return normalize(match.group(1))
 
 
 def ukaz_authority(doc):
@@ -213,14 +229,14 @@ def extract_authority(doc, doc_type):
         authority = doc.split('\n')[0]
         if authority == organization:
             authority += ' ' + doc.split('\n')[1]
-        for sub in subs2:
-            if authority.startswith(sub[0]):
-                authority = re.sub(sub[0], sub[1], authority)
-        authority = re.sub(r'(от )?\d.*', '', authority)
+        for sub in subs:
+            if authority.startswith(subs[sub]):
+                authority = re.sub(sub, subs[sub], authority)
+        authority = re.sub(r'(от )?\d.*', '', authority).strip()
         return authority
     index = doc.find('принят ')
     if index != -1:
-        doc = doc[index + 6:]
+        doc = doc[index + len('принят'):]
         authority = doc.split('\n')[0]
         authority = re.sub(r'(от )?\d.*', '', authority)
 
@@ -229,7 +245,7 @@ def extract_authority(doc, doc_type):
 
 NAME_EXPR = re.compile(r'(\nоб?\s[а-я]([^\n]+\n)+\n)')
 UKAZ_EXPR = re.compile(r'(\nвопросы\s([^\n]+\n)+\n)')
-POST_EXPR = re.compile(r'"о\s[^"]+"')
+POST_EXPR = re.compile(r'"об?\s[^"]+"')
 LAST_EXPR = re.compile(r'(об? ([^\n]+\n)+)\n')
 POST2_EXPR = re.compile(r'(о внесении изменени[яй] [^\"]+)\"')
 
